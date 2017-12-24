@@ -71,6 +71,18 @@ def draw_scatterplot(variable1, variable2):
     plt.ylabel(variable2)
     plt.show()
 
+def record_with_many_nan():
+	for index in df.index:
+	    record = df.loc[index, :]
+	    count = 0
+	    for variable in record.index:
+	        if (type(record[variable]) == float or \
+	        		type(record[variable]) == np.float64) and \
+	        	np.isnan(record[variable]):
+	            count += 1
+	    if count >= 18:
+	        print index, " : ", record
+
 # draw_scatterplot("salary", "bonus")
 # df[df["bonus"] > 0.8e8] #TOTAL
 # TOTAL has pretty large bonus, so it's easy to recognize
@@ -78,6 +90,12 @@ df = df[df.index != "TOTAL"]
 # But when I looked through the forum, a post showed another outlier! 
 # reference: https://discussions.udacity.com/t/looking-for-assistance-on-the-final-project/240282
 df = df[df.index != "THE TRAVEL AGENCY IN THE PARK"]
+# record_with_many_nan()
+
+#Through the hint provided by the reviewer, I found one record contained all NaN values
+# except POI, "LOCKHART EUGENE E". It was also an outlier, since it could not 
+# provide any information.
+df = df[df.index != "LOCKHART EUGENE E"]
 
 ### Task 3: Create new feature(s)
 ### Store to my_dataset for easy export below.
@@ -133,152 +151,159 @@ N_FEATURES_OPTIONS = [2, 3, 5, 8, 10, 12, 15]
  # {'reduce_dim__n_components': 8} - Precision: 0.42568      Recall: 0.34650
 
 #with scale:
-#{'reduce_dim__n_components': 12} - Precision: 0.32214      Recall: 0.31650
+#{'reduce_dim__n_components': 15} - Precision: 0.32231      Recall: 0.34600
 
 ## -----------option 2: using selectKBest--(final algorithm used)---------------------
-pipe = Pipeline([
-	("reduce_dim", SelectKBest(f_classif)),
-	("classify", GaussianNB())
-])
-param_grid = [
-	{
-		"reduce_dim__k":  N_FEATURES_OPTIONS,
-	}
-]
-# {'reduce_dim__k': 5} -- Precision: 0.41646      Recall: 0.33900
-
-
-##==========================Decision Tree==========================
-# MIN_SAMPLES_SPLIT_OPTIONS = [2, 4, 6, 8, 10, 12, 15, 20, 30]
-# MAX_DEPTH_OPTIONS = [2, 3, 4, 5, 6, 7, 8]
-# ----option 1: PCA---------------- 
-# pipe = Pipeline([
-# 	("scale", MinMaxScaler()),
-# 	("pca", PCA(random_state = 42)),
-# 	("classify", tree.DecisionTreeClassifier())
-# ])
-# param_grid = [
-# 	{
-# 		"pca__n_components": N_FEATURES_OPTIONS,
-# 		"classify__min_samples_split": MIN_SAMPLES_SPLIT_OPTIONS,
-# 		"classify__max_depth": MAX_DEPTH_OPTIONS
-# 	}
-# ]
-# {'classify__min_samples_split': 20, 'pca__n_components': 2, 'classify__max_depth': 2}
-# Precision: 0.39211      Recall: 0.24350
-
-
-# ----option 2: selectKBest----------------
 # pipe = Pipeline([
 # 	("reduce_dim", SelectKBest(f_classif)),
-# 	("classify", tree.DecisionTreeClassifier())
+# 	("classify", GaussianNB())
 # ])
 # param_grid = [
 # 	{
 # 		"reduce_dim__k":  N_FEATURES_OPTIONS,
-# 		"classify__min_samples_split": MIN_SAMPLES_SPLIT_OPTIONS,
-# 		"classify__max_depth": MAX_DEPTH_OPTIONS
 # 	}
 # ]
+# {'reduce_dim__k': 5} 
+# Precision: 0.41646      Recall: 0.33900
+
+
+##==========================Decision Tree==========================
+MIN_SAMPLES_SPLIT_OPTIONS = [2, 4, 6, 8, 10, 12, 15, 20, 30]
+MAX_DEPTH_OPTIONS = [2, 3, 4, 5, 6, 7, 8]
+# ----option 1: PCA---------------- 
+pipe3 = Pipeline([
+	("scale", MinMaxScaler()),
+	("pca", PCA(random_state = 42)),
+	("classify", tree.DecisionTreeClassifier())
+])
+param_grid3 = [
+	{
+		"pca__n_components": N_FEATURES_OPTIONS,
+		"classify__min_samples_split": MIN_SAMPLES_SPLIT_OPTIONS,
+		"classify__max_depth": MAX_DEPTH_OPTIONS
+	}
+]
+# {'classify__min_samples_split': 15, 'pca__n_components': 2, 'classify__max_depth': 3}
+# Precision: 0.45178      Recall: 0.26000
+
+
+# ----option 2: selectKBest----------------
+pipe4 = Pipeline([
+	("reduce_dim", SelectKBest(f_classif)),
+	("classify", tree.DecisionTreeClassifier())
+])
+param_grid4 = [
+	{
+		"reduce_dim__k":  N_FEATURES_OPTIONS,
+		"classify__min_samples_split": MIN_SAMPLES_SPLIT_OPTIONS,
+		"classify__max_depth": MAX_DEPTH_OPTIONS
+	}
+]
 # {'classify__min_samples_split': 2, 'reduce_dim__k': 2, 'classify__max_depth': 3}
 # Precision: 0.37475      Recall: 0.18400
 
 
 ##==========================K Nearest Neighbors==========================
-# N_NEIGHBORS_OPTIONS = [3, 5, 6, 7, 8, 10, 12, 15]
+N_NEIGHBORS_OPTIONS = [3, 5, 6, 7, 8, 10, 12, 15]
 # ----------option 1: PCA--------------------
-# pipe = Pipeline([
-# 	("scale", MinMaxScaler()),
-# 	("pca", PCA(random_state = 42)),
-# 	("classify", KNeighborsClassifier())
-# ])
-# param_grid = [
-# 	{
-# 		"pca__n_components": N_FEATURES_OPTIONS,
-# 		"classify__n_neighbors": N_NEIGHBORS_OPTIONS,
-# 	}
-# ]
+pipe5 = Pipeline([
+	("scale", MinMaxScaler()),
+	("pca", PCA(random_state = 42)),
+	("classify", KNeighborsClassifier())
+])
+param_grid5 = [
+	{
+		"pca__n_components": N_FEATURES_OPTIONS,
+		"classify__n_neighbors": N_NEIGHBORS_OPTIONS,
+	}
+]
 # {'pca__n_components': 2, 'classify__n_neighbors': 3}
 # Precision: 0.37860      Recall: 0.23000
 
 # -------------option 2: selectKBest---------------
-# pipe = Pipeline([
-# 	("scale", MinMaxScaler()),
-# 	("reduce_dim", SelectKBest(f_classif)),
-# 	("classify", KNeighborsClassifier())
-# ])
-# param_grid = [
-# 	{
-# 		"reduce_dim__k":  N_FEATURES_OPTIONS,
-# 		"classify__n_neighbors": N_NEIGHBORS_OPTIONS,
-# 	}
-# ]
+pipe6 = Pipeline([
+	("scale", MinMaxScaler()),
+	("reduce_dim", SelectKBest(f_classif)),
+	("classify", KNeighborsClassifier())
+])
+param_grid6 = [
+	{
+		"reduce_dim__k":  N_FEATURES_OPTIONS,
+		"classify__n_neighbors": N_NEIGHBORS_OPTIONS,
+	}
+]
 # {'reduce_dim__k': 2, 'classify__n_neighbors': 5}
 # Precision: 0.51042      Recall: 0.14700
 
 
 ##==========================SVC==========================
-# C_OPTIONS = [0.1, 1, 10, 100, 1000, 2500, 5000, 7500, 10000, 1e5]
-# kernels = ["rbf"]
-# GAMMA_OPTIONS = [0.0001, 0.0005, 0.001, 0.005, 0.01, 0.1, 0.2, 0.5, 0.75, 1]
+C_OPTIONS = [0.1, 1, 10, 100, 1000, 2500, 5000, 7500, 10000, 1e5]
+kernels = ["rbf"]
+GAMMA_OPTIONS = [0.0001, 0.0005, 0.001, 0.005, 0.01, 0.1, 0.2, 0.5, 0.75, 1]
 
 # -----------option 1: PCA --------------------------------
-# pipe = Pipeline([
-# 	("scale", MinMaxScaler()),
-# 	("pca", PCA()),
-# 	("classify", SVC())
-# ])
-# param_grid = [
-# 	{
-# 		"pca__n_components": N_FEATURES_OPTIONS,
-# 		"classify__C": C_OPTIONS,
-# 		"classify__kernel": kernels,
-# 		"classify__gamma": GAMMA_OPTIONS
-# 	}
-# ]
+pipe7 = Pipeline([
+	("scale", MinMaxScaler()),
+	("pca", PCA()),
+	("classify", SVC())
+])
+param_grid7 = [
+	{
+		"pca__n_components": N_FEATURES_OPTIONS,
+		"classify__C": C_OPTIONS,
+		"classify__kernel": kernels,
+		"classify__gamma": GAMMA_OPTIONS
+	}
+]
 # {'classify__C': 10000, 'pca__n_components': 2, 'classify__gamma': 0.75, 'classify__kernel': 'rbf'}
  # Precision: 0.22973      Recall: 0.08500
 
 
 #----------------option 2: selectKBest-----------------
-# pipe = Pipeline([
-# 	("scale", MinMaxScaler()),
-# 	("reduce_dim", SelectKBest(f_classif)),
-# 	("classify", SVC())
-# ])
-# param_grid = [
-# 	{
-# 		"reduce_dim__k": N_FEATURES_OPTIONS,
-# 		"classify__C": C_OPTIONS,
-# 		"classify__kernel": kernels,
-# 		"classify__gamma": GAMMA_OPTIONS
-# 	}
-# ]
+pipe8 = Pipeline([
+	("scale", MinMaxScaler()),
+	("reduce_dim", SelectKBest(f_classif)),
+	("classify", SVC())
+])
+param_grid8 = [
+	{
+		"reduce_dim__k": N_FEATURES_OPTIONS,
+		"classify__C": C_OPTIONS,
+		"classify__kernel": kernels,
+		"classify__gamma": GAMMA_OPTIONS
+	}
+]
 # {'classify__C': 2500, 'reduce_dim__k': 15, 'classify__gamma': 0.005, 'classify__kernel': 'rbf'}
 # Precision: 0.56355      Recall: 0.16850
 
 #actually, SelectKBest(chi2) raise error:
 # https://stackoverflow.com/questions/25792012/feature-selection-using-scikit-learn
+pipes = [pipe3, pipe4, pipe5, pipe6, pipe7, pipe8]
+param_grids = [param_grid3, param_grid4, param_grid5, param_grid6, param_grid7, param_grid8 ]
+for i in range(len(pipes)):
+	pipe = pipes[i]
+	param_grid = param_grids[i]
 
-cv = StratifiedShuffleSplit(n_splits = 100, random_state = 42)
-grid = GridSearchCV(pipe, cv=cv, param_grid=param_grid, scoring='f1')
+	cv = StratifiedShuffleSplit(n_splits = 100, random_state = 42)
+	grid = GridSearchCV(pipe, cv=cv, param_grid=param_grid, scoring='f1')
 
-features_train, features_test, labels_train, labels_test = \
-    train_test_split(features, labels, test_size=0.2, \
-    		random_state=42, stratify = labels)
-# print grid.best_estimator_
-grid.fit(features_train, labels_train)
-print grid.best_params_
-test_classifier(grid.best_estimator_, my_dataset, features_list)
+	grid.fit(features, labels)
 
-clf = grid.best_estimator_
+	print grid.best_params_
+	test_classifier(grid.best_estimator_, my_dataset, features_list)
 
-features_final = clf.named_steps['reduce_dim'].get_support()
-feature_scores_final = clf.named_steps['reduce_dim'].scores_
-for i in range(len(financial_features + email_features)):
-	feature = (financial_features + email_features)[i]
-	score = round(feature_scores_final[i],2)
-	print feature, " | ", features_final[i], ' | ', score, " |"
+	clf = grid.best_estimator_
+
+	try:
+		features_final = clf.named_steps['reduce_dim'].get_support()
+		feature_scores_final = clf.named_steps['reduce_dim'].scores_
+		for i in range(len(financial_features + email_features)):
+			feature = (financial_features + email_features)[i]
+			score = round(feature_scores_final[i],2)
+			print feature, " | ", features_final[i], ' | ', score, " |"
+	except:
+		print "PCA"
+
 ### Task 5: Tune your classifier to achieve better than .3 precision and recall 
 ### using our testing script. Check the tester.py script in the final project
 ### folder for details on the evaluation method, especially the test_classifier

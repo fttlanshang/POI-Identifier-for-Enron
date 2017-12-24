@@ -1,5 +1,10 @@
 # Identify POI from Enron Dataset
 
+### Explore the dataset
+- total number of data points: 146
+- allocation across classes (POI/non-POI): 18 POIs and 128 non-POIs.
+- There are many missing values in the dataset. For the `salary` feature, there are only 95 valid(non NaN) values. And for some other features, like `deferral_payments`, `deferred_income`, `director_fees`, `loan_advances` and `restricted_stock_deferred`, missing values account for more than a half.
+
 ### Questions and Answers
 > Summarize for us the goal of this project and how machine learning is useful in trying to accomplish it. As part of your answer, give some background on the dataset and how it can be used to answer the project question. Were there any outliers in the data when you got it, and how did you handle those?  [relevant rubric items: “data exploration”, “outlier investigation”]
 
@@ -18,7 +23,8 @@ df["from_poi_to_this_person_ratio"] = df["from_poi_to_this_person"] / df["to_mes
 df["shared_ratio"] = df["shared_receipt_with_poi"] / (df["from_messages"] + df["to_messages"])
 ```
 
-At first, I wanted to use scatterplot to select features manually. But the scatterplot could only show two features at one time and it was pretty hard to determine through the scatterplots. So later, I used `selectKBest` and `PCA` function to reduce dimensionality. I integrated them into pipeline. Since both can reduce dimensionality, so I preferred not to use them in the same pipeline.
+**I used `selectKBest` for automating feature selection and used `GridSearchCV` to tune the parameters for `k`. Also, I used `GridSearchCV` in the pipeline, thinking that different algorithms may varied in the number of features needed to achieve a better score. **	
+**I used `selectKBest` and `PCA` function to reduce dimensionality. I integrated them into pipeline. Since both can reduce dimensionality, so I preferred not to use them in the same pipeline.**
 
 Since K Nearest Neighbors, SVC and PCA are sensitive to feature scaling, so I performed feature scaling when using above algorithms or preprocessing. And Naive Bayes and Decision Trees are invariant to feature scaling, so I didn't do feature scaling unless I used PCA ahead for dimeansion reduce.
 
@@ -51,8 +57,9 @@ I ended up using GaussianNB algorithm. I also tried SVC, K Nearest Neighbors and
 
 Algorithm      		| method to reduce dimensionality | precision | recall  |
 ------------------- | ------------------------------- | --------- | --------|
-GaussianNB     		| PCA 							  | 0.32214   | 0.31650 |
+GaussianNB     		| PCA 							  | 0.32231   | 0.34600 |
 GaussianNB(final)   | selectKBest 					  | 0.41646   | 0.33900 |
+
 Decision Trees 		| PCA 							  | 0.39211   | 0.24350 |
 Decision Trees 		| selectKBest 					  | 0.37475   | 0.18400 |
 K Nearest Neighbors | PCA 							  | 0.37860   | 0.23000 |
@@ -64,13 +71,13 @@ SVC 				| selectKBest 					  | 0.56355   | 0.16850 |
 
 Parameters would cause huge difference in performance. We tuned the parameters of an algorithms to achieve better performance and sometimes to avoid overfitting. If we didn't do this well, then we could probably get worse performance than the default one.
 
-I used `GridSearchCV` during the parameters tuning period. Actually, the final algorithm that I perferred to use didn't have parameters that I need to tune. But in my whole exploration process, I tuned parameters for other three algorithms. Below is a summary of the parameters I tuned. 
+I used `GridSearchCV` during the parameters tuning period. Actually, the final algorithm that I perferred to use didn't have parameters that I need to tune. But in my whole exploration process, I tuned parameters for other three algorithms. Below is a summary of the parameters I tuned. The settings for each parameter were listed in the brackets.
 
-- For `selectKBest`: `k`
-- For `PCA`: `n_components`
-- For `SVC`: `C` and `gamma`
-- For `DecisionTreeClassifier`: `max_depth` and `min_samples_split`
-- For `KNeighborsClassifier`: `k`
+- For `selectKBest`: `k`([2, 3, 5, 8, 10, 12, 15])
+- For `PCA`: `n_components`([2, 3, 5, 8, 10, 12, 15])
+- For `SVC`: `C`([0.1, 1, 10, 100, 1000, 2500, 5000, 7500, 10000, 1e5]) and `gamma`([0.0001, 0.0005, 0.001, 0.005, 0.01, 0.1, 0.2, 0.5, 0.75, 1])
+- For `DecisionTreeClassifier`: `max_depth`([2, 3, 4, 5, 6, 7, 8]) and `min_samples_split`([2, 4, 6, 8, 10, 12, 15, 20, 30])
+- For `KNeighborsClassifier`: `n_neighbors`([3, 5, 6, 7, 8, 10, 12, 15])
 
 > What is validation, and what’s a classic mistake you can make if you do it wrong? How did you validate your analysis?  [relevant rubric items: “discuss validation”, “validation strategy”]
 
