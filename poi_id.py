@@ -46,6 +46,42 @@ email_features = [
 
 features_list = ['poi'] + financial_features + email_features
 
+## Feature selection are integrated into pipeline and the parameters are tuned 
+# using GridSearchCV. I did this because maybe different algorithms needed different
+# number of features to perform better.
+
+# At last, I chose to use GaussianNB classifier. And I want to explore the relationship
+# between numbers of features selected and recall/precision score.
+def numbers_of_features_performance():
+	accuracy_array = []
+	precision_array = []
+	recall_array = []
+	numbers = range(1, 18)
+	for k in numbers:
+		feature_selection = SelectKBest(f_classif, k = k)
+		classifier = GaussianNB()
+		clf = Pipeline([('reduce_dim', feature_selection), ('clf', classifier)])
+		accuracy, precision, recall = test_classifier(clf, my_dataset, features_list)
+		accuracy_array.append(accuracy)
+		precision_array.append(precision)
+		recall_array.append(recall)
+	plt.plot(numbers, accuracy_array, '-o', color="b", label="accuracy score")
+	plt.plot(numbers, precision_array, '-o', color = "r", label = "precision score")
+	plt.plot(numbers, recall_array, '-o', color="g", label = "recall score")
+	plt.axhline(y = 0.3, linestyle = '--')
+	plt.legend()
+	plt.xlabel("Number of k best features")
+	plt.ylabel("Score")
+	plt.xticks(numbers)
+	plt.title("Accuracy, Precision, Recall vs Number of K-best Features")
+	plt.savefig("score_vs_number_of_k-best_features.png")
+	plt.show()
+
+# Precision: 0.41646      Recall: 0.33900 	k = 5
+# Precision: 0.42616      Recall: 0.35350 	k = 6
+# Precision: 0.38037      Recall: 0.32750 	k = 12
+
+
 ### Load the dictionary containing the dataset
 with open("final_project_dataset.pkl", "r") as data_file:
     data_dict = pickle.load(data_file)
@@ -153,7 +189,8 @@ param_grid1 = [
 #with scale:
 #{'reduce_dim__n_components': 15} - Precision: 0.32231      Recall: 0.34600
 
-## -----------option 2: using selectKBest--(final algorithm used)---------------------
+## -----------option 2: using selectKBest---------------------------
+# ----------(final algorithm used, while the k parameter can be further tuned )---------------------
 pipe2 = Pipeline([
 	("reduce_dim", SelectKBest(f_classif)),
 	("classify", GaussianNB())
@@ -279,10 +316,13 @@ param_grid8 = [
 pipes = [pipe1, pipe2, pipe3, pipe4, pipe5, pipe6, pipe7, pipe8]
 param_grids = [param_grid1, param_grid2, param_grid3, param_grid4, 
 		param_grid5, param_grid6, param_grid7, param_grid8 ]
-for i in range(len(pipes)):
-	pipe = pipes[i]
-	param_grid = param_grids[i]
-	get_best_estimator_from_grid_search(pipe, param_grid)
+
+# the for loop estimated the performance for each algorithm
+# time consuming
+# for i in range(len(pipes)):
+# 	pipe = pipes[i]
+# 	param_grid = param_grids[i]
+# 	get_best_estimator_from_grid_search(pipe, param_grid)
 
 def get_best_estimator_from_grid_search(pipe, param_grid):
 	cv = StratifiedShuffleSplit(n_splits = 100, random_state = 42)
@@ -300,6 +340,14 @@ def get_best_estimator_from_grid_search(pipe, param_grid):
 			print feature, " | ", features_final[i], ' | ', score, " |"
 	except:
 		print "PCA"
+	return clf
+
+# numbers_of_features_performance()
+# the above function tuned k parameter, and the result revealed when k = 6,
+# the performance was better than other k values
+final_feature_selection = SelectKBest(f_classif, k = 6)
+clf = Pipeline([('reduce_dim', final_feature_selection), ('clf', GaussianNB())])
+
 
 ### Task 5: Tune your classifier to achieve better than .3 precision and recall 
 ### using our testing script. Check the tester.py script in the final project
@@ -313,4 +361,4 @@ def get_best_estimator_from_grid_search(pipe, param_grid):
 ### check your results. You do not need to change anything below, but make sure
 ### that the version of poi_id.py that you submit can be run on its own and
 ### generates the necessary .pkl files for validating your results.
-# dump_classifier_and_data(clf, my_dataset, features_list)
+dump_classifier_and_data(clf, my_dataset, features_list)

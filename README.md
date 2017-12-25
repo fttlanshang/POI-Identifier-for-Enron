@@ -1,6 +1,6 @@
 # Identify POI from Enron Dataset
 
-### Explore the dataset
+### Explore the Dataset
 - total number of data points: 146
 - allocation across classes (POI/non-POI): 18 POIs and 128 non-POIs.
 - There are many missing values in the dataset. For the `salary` feature, there are only 95 valid(non NaN) values. And for some other features, like `deferral_payments`, `deferred_income`, `director_fees`, `loan_advances` and `restricted_stock_deferred`, missing values account for more than a half.
@@ -10,7 +10,7 @@
 
 In 2000, Enron was one of the largest companies in the United States. By 2002, it had collapsed into bankruptcy due to widespread corporate fraud. In the resulting Federal investigation, a significant amount of typically confidential information entered into the public record, including tens of thousands of emails and detailed financial data for top executives. The goal of this project is to identify persons of interest in the famous Enron fraud case using the email and financial dataset given. We could use machine learning algorithms, in this case, supervised learning algorithms, to classify people into binary groups, poi or non-poi.  
 
-There were two obvious outliers in the data. The first one was "TOTAL" and I found it through scatterplot. The second one was called "THE TRAVEL AGENCY IN THE PARK". I didn't notice it at first and got it from [a post](https://discussions.udacity.com/t/looking-for-assistance-on-the-final-project/240282). It couldn't be a person's name and there were only one valid value for expense. I removed these two outliers in the dataset, since they were not information describing a person.
+There were three outliers I found in the data. The first one was "TOTAL" and I found it through scatterplot. The second one was called "THE TRAVEL AGENCY IN THE PARK". I didn't notice it at first and got it from [a post](https://discussions.udacity.com/t/looking-for-assistance-on-the-final-project/240282). It couldn't be a person's name and there were only one valid value for expense. The third outlier came from reviewer's suggestion, "LOCKHART EUGENE E", which only had NaN values except for POI column. I removed these outliers in the dataset, since they were not information describing a person.
 
 
 > What features did you end up using in your POI identifier, and what selection process did you use to pick them? Did you have to do any scaling? Why or why not? As part of the assignment, you should attempt to engineer your own feature that does not come ready-made in the dataset -- explain what feature you tried to make, and the rationale behind it. (You do not necessarily have to use it in the final analysis, only engineer and test it.) In your feature selection step, if you used an algorithm like a decision tree, please also give the feature importances of the features that you use, and if you used an automated feature selection function like SelectKBest, please report the feature scores and reasons for your choice of parameter values.  [relevant rubric items: “create new features”, “intelligently select features”, “properly scale features”]
@@ -23,12 +23,13 @@ df["from_poi_to_this_person_ratio"] = df["from_poi_to_this_person"] / df["to_mes
 df["shared_ratio"] = df["shared_receipt_with_poi"] / (df["from_messages"] + df["to_messages"])
 ```
 
-**I used `selectKBest` for automating feature selection and used `GridSearchCV` to tune the parameters for `k`. Also, I used `GridSearchCV` in the pipeline, thinking that different algorithms may varied in the number of features needed to achieve a better score. **	
-**I used `selectKBest` and `PCA` function to reduce dimensionality. I integrated them into pipeline. Since both can reduce dimensionality, so I preferred not to use them in the same pipeline.**
+**Firstly, I used `selectKBest` for automating feature selection and used `GridSearchCV` to tune the parameters for `k`. Besides, I used `GridSearchCV` in the pipeline, considering that different algorithms may vary in the number of best features needed to achieve a better score. After I've decided to use Gaussian classfier, I drew a plot about the precision/recall/accuracy score vs number of k-best features used(using function `numbers_of_features_performance`). From the plot, I decided to use 6 best features.**
 
-Since K Nearest Neighbors, SVC and PCA are sensitive to feature scaling, so I performed feature scaling when using above algorithms or preprocessing. And Naive Bayes and Decision Trees are invariant to feature scaling, so I didn't do feature scaling unless I used PCA ahead for dimeansion reduce.
+![](score_vs_number_of_k-best_features.png)	
 
-I ended up using 5 features in my POI identifier: `total_stock_value`, `exercised_stock_options`, `salary`,`bonus` and `from_this_person_to_poi_ratio`. The table below summarised all features and their relative scores. 
+Also, I tried PCA in my pipeline to see whether it would bring better performance. Since K Nearest Neighbors, SVC and PCA are sensitive to feature scaling, so I performed feature scaling when using above algorithms or preprocessing. And Naive Bayes and Decision Trees are invariant to feature scaling, so I didn't do feature scaling unless I used PCA ahead.
+
+I ended up using 6 features in my POI identifier: `total_stock_value`, `exercised_stock_options`, `salary`,`bonus`, `from_this_person_to_poi_ratio` and `shared_ratio`. The table below summarised all features and their relative scores. 
 
 Features      					| used or not 	| score | 
 ------------------- 			| -------- 		|-----  |
@@ -37,7 +38,7 @@ exercised_stock_options  		|  True  		|  13.71|
 salary  						|  True  		|  11.2 |
 bonus  							|  True 		|  11.13|
 from_this_person_to_poi_ratio  	|  True  		|  8.24 |
-shared_ratio 					|  False  		|  6.6  |
+shared_ratio 					|  True  		|  6.6  |
 restricted_stock  				|  False  		|  6.58 |
 expenses  						|  False  		|  5.91 |
 deferred_income  				|  False  		|  5.3  |
@@ -58,13 +59,15 @@ I ended up using GaussianNB algorithm. I also tried SVC, K Nearest Neighbors and
 Algorithm      		| method to reduce dimensionality | precision | recall  |
 ------------------- | ------------------------------- | --------- | --------|
 GaussianNB(*)     	| PCA 							  | 0.32231   | 0.34600 |
-GaussianNB(*final)  | selectKBest 					  | 0.41646   | 0.33900 |
+GaussianNB(*final)  | selectKBest(k = 6) 			  | 0.42616   | 0.35350 |
 Decision Trees 		| PCA 							  | 0.45195   | 0.26100 |
 Decision Trees 		| selectKBest 					  | 0.28997   | 0.26750 |
 K Nearest Neighbors | PCA 							  | 0.37860   | 0.23000 |
 K Nearest Neighbors | selectKBest 					  | 0.43006   | 0.24750 |
 SVC(*) 				| PCA 							  | 0.31720   | 0.34400 |
 SVC 				| selectKBest 					  | 0.28027   | 0.27200 |
+
+note: * means that it achieved requirments(precision > 0.3 && recall > 0.3)
 
 > What does it mean to tune the parameters of an algorithm, and what can happen if you don’t do this well?  How did you tune the parameters of your particular algorithm? What parameters did you tune? (Some algorithms do not have parameters that you need to tune -- if this is the case for the one you picked, identify and briefly explain how you would have done it for the model that was not your final choice or a different model that does utilize parameter tuning, e.g. a decision tree classifier).  [relevant rubric items: “discuss parameter tuning”, “tune the algorithm”]
 
