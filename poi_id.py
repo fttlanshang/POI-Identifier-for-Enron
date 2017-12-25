@@ -137,16 +137,16 @@ N_FEATURES_OPTIONS = [2, 3, 5, 8, 10, 12, 15]
 # But I think PCA need feature scaling, but it did't perform well when doing
 # feature scaling before PCA. Why?
 ##---------------option 1: using PCA to reduce dimensionality----------
-# pipe = Pipeline([
-# 	("scale", MinMaxScaler()),
-# 	("reduce_dim", PCA(random_state=42)),
-# 	("classify", GaussianNB())
-# ])
-# param_grid = [
-# 	{
-# 		"reduce_dim__n_components":  N_FEATURES_OPTIONS,
-# 	}
-# ]
+pipe1 = Pipeline([
+	("scale", MinMaxScaler()),
+	("reduce_dim", PCA(random_state=42)),
+	("classify", GaussianNB())
+])
+param_grid1 = [
+	{
+		"reduce_dim__n_components":  N_FEATURES_OPTIONS,
+	}
+]
 #without scale: 
  # {'reduce_dim__n_components': 8} - Precision: 0.42568      Recall: 0.34650
 
@@ -154,15 +154,15 @@ N_FEATURES_OPTIONS = [2, 3, 5, 8, 10, 12, 15]
 #{'reduce_dim__n_components': 15} - Precision: 0.32231      Recall: 0.34600
 
 ## -----------option 2: using selectKBest--(final algorithm used)---------------------
-# pipe = Pipeline([
-# 	("reduce_dim", SelectKBest(f_classif)),
-# 	("classify", GaussianNB())
-# ])
-# param_grid = [
-# 	{
-# 		"reduce_dim__k":  N_FEATURES_OPTIONS,
-# 	}
-# ]
+pipe2 = Pipeline([
+	("reduce_dim", SelectKBest(f_classif)),
+	("classify", GaussianNB())
+])
+param_grid2 = [
+	{
+		"reduce_dim__k":  N_FEATURES_OPTIONS,
+	}
+]
 # {'reduce_dim__k': 5} 
 # Precision: 0.41646      Recall: 0.33900
 
@@ -184,7 +184,7 @@ param_grid3 = [
 	}
 ]
 # {'classify__min_samples_split': 15, 'pca__n_components': 2, 'classify__max_depth': 3}
-# Precision: 0.45178      Recall: 0.26000
+# Precision: 0.45195      Recall: 0.26100
 
 
 # ----option 2: selectKBest----------------
@@ -199,9 +199,8 @@ param_grid4 = [
 		"classify__max_depth": MAX_DEPTH_OPTIONS
 	}
 ]
-# {'classify__min_samples_split': 2, 'reduce_dim__k': 2, 'classify__max_depth': 3}
-# Precision: 0.37475      Recall: 0.18400
-
+# {'classify__min_samples_split': 2, 'reduce_dim__k': 3, 'classify__max_depth': 6}
+# Precision: 0.28997      Recall: 0.26750
 
 ##==========================K Nearest Neighbors==========================
 N_NEIGHBORS_OPTIONS = [3, 5, 6, 7, 8, 10, 12, 15]
@@ -232,9 +231,8 @@ param_grid6 = [
 		"classify__n_neighbors": N_NEIGHBORS_OPTIONS,
 	}
 ]
-# {'reduce_dim__k': 2, 'classify__n_neighbors': 5}
-# Precision: 0.51042      Recall: 0.14700
-
+# {'reduce_dim__k': 3, 'classify__n_neighbors': 3}
+# Precision: 0.43006      Recall: 0.24750
 
 ##==========================SVC==========================
 C_OPTIONS = [0.1, 1, 10, 100, 1000, 2500, 5000, 7500, 10000, 1e5]
@@ -255,9 +253,8 @@ param_grid7 = [
 		"classify__gamma": GAMMA_OPTIONS
 	}
 ]
-# {'classify__C': 10000, 'pca__n_components': 2, 'classify__gamma': 0.75, 'classify__kernel': 'rbf'}
- # Precision: 0.22973      Recall: 0.08500
-
+ # {'classify__C': 100000.0, 'pca__n_components': 10, 'classify__gamma': 0.1, 'classify__kernel': 'rbf'}
+ # Precision: 0.31720      Recall: 0.34400
 
 #----------------option 2: selectKBest-----------------
 pipe8 = Pipeline([
@@ -273,27 +270,27 @@ param_grid8 = [
 		"classify__gamma": GAMMA_OPTIONS
 	}
 ]
-# {'classify__C': 2500, 'reduce_dim__k': 15, 'classify__gamma': 0.005, 'classify__kernel': 'rbf'}
-# Precision: 0.56355      Recall: 0.16850
+
+# {'classify__C': 100000.0, 'reduce_dim__k': 15, 'classify__gamma': 0.1, 'classify__kernel': 'rbf'}
+# Precision: 0.28027      Recall: 0.27200
 
 #actually, SelectKBest(chi2) raise error:
 # https://stackoverflow.com/questions/25792012/feature-selection-using-scikit-learn
-pipes = [pipe3, pipe4, pipe5, pipe6, pipe7, pipe8]
-param_grids = [param_grid3, param_grid4, param_grid5, param_grid6, param_grid7, param_grid8 ]
+pipes = [pipe1, pipe2, pipe3, pipe4, pipe5, pipe6, pipe7, pipe8]
+param_grids = [param_grid1, param_grid2, param_grid3, param_grid4, 
+		param_grid5, param_grid6, param_grid7, param_grid8 ]
 for i in range(len(pipes)):
 	pipe = pipes[i]
 	param_grid = param_grids[i]
+	get_best_estimator_from_grid_search(pipe, param_grid)
 
+def get_best_estimator_from_grid_search(pipe, param_grid):
 	cv = StratifiedShuffleSplit(n_splits = 100, random_state = 42)
 	grid = GridSearchCV(pipe, cv=cv, param_grid=param_grid, scoring='f1')
-
 	grid.fit(features, labels)
-
 	print grid.best_params_
-	test_classifier(grid.best_estimator_, my_dataset, features_list)
-
 	clf = grid.best_estimator_
-
+	test_classifier(clf, my_dataset, features_list)
 	try:
 		features_final = clf.named_steps['reduce_dim'].get_support()
 		feature_scores_final = clf.named_steps['reduce_dim'].scores_
@@ -316,4 +313,4 @@ for i in range(len(pipes)):
 ### check your results. You do not need to change anything below, but make sure
 ### that the version of poi_id.py that you submit can be run on its own and
 ### generates the necessary .pkl files for validating your results.
-dump_classifier_and_data(clf, my_dataset, features_list)
+# dump_classifier_and_data(clf, my_dataset, features_list)

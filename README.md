@@ -53,19 +53,18 @@ other  							|  False  		|  0.01 |
 
 > What algorithm did you end up using? What other one(s) did you try? How did model performance differ between algorithms?  [relevant rubric item: “pick an algorithm”]
 
-I ended up using GaussianNB algorithm. I also tried SVC, K Nearest Neighbors and Decision Trees. The table below summarized their performance on precision and recall. I used the parameters found by pipeline and GridSearchCV for each algorithm to evaluate their performance. We could see that GaussianNB performed better than any other algorithms, achieving the goal that the recall and precision score should both be larger than 0.3. Roughly speaking, the other three algorithms had good score in precision, but low score in recall. 
+I ended up using GaussianNB algorithm. I also tried SVC, K Nearest Neighbors and Decision Trees. The table below summarized their performance on precision and recall. I used the parameters found by pipeline and GridSearchCV for each algorithm to evaluate their performance. We could see that GaussianNB performed better than any other algorithms, achieving the goal that the recall and precision score should both be larger than 0.3. SVC with PCA also achieved the goal. While the other algorithms didn't meet specifications, especially in recall score. 
 
 Algorithm      		| method to reduce dimensionality | precision | recall  |
 ------------------- | ------------------------------- | --------- | --------|
-GaussianNB     		| PCA 							  | 0.32231   | 0.34600 |
-GaussianNB(final)   | selectKBest 					  | 0.41646   | 0.33900 |
-
-Decision Trees 		| PCA 							  | 0.39211   | 0.24350 |
-Decision Trees 		| selectKBest 					  | 0.37475   | 0.18400 |
+GaussianNB(*)     	| PCA 							  | 0.32231   | 0.34600 |
+GaussianNB(*final)  | selectKBest 					  | 0.41646   | 0.33900 |
+Decision Trees 		| PCA 							  | 0.45195   | 0.26100 |
+Decision Trees 		| selectKBest 					  | 0.28997   | 0.26750 |
 K Nearest Neighbors | PCA 							  | 0.37860   | 0.23000 |
-K Nearest Neighbors | selectKBest 					  | 0.51042   | 0.14700 |
-SVC 				| PCA 							  | 0.22973   | 0.08500 |
-SVC 				| selectKBest 					  | 0.56355   | 0.16850 |
+K Nearest Neighbors | selectKBest 					  | 0.43006   | 0.24750 |
+SVC(*) 				| PCA 							  | 0.31720   | 0.34400 |
+SVC 				| selectKBest 					  | 0.28027   | 0.27200 |
 
 > What does it mean to tune the parameters of an algorithm, and what can happen if you don’t do this well?  How did you tune the parameters of your particular algorithm? What parameters did you tune? (Some algorithms do not have parameters that you need to tune -- if this is the case for the one you picked, identify and briefly explain how you would have done it for the model that was not your final choice or a different model that does utilize parameter tuning, e.g. a decision tree classifier).  [relevant rubric items: “discuss parameter tuning”, “tune the algorithm”]
 
@@ -81,9 +80,12 @@ I used `GridSearchCV` during the parameters tuning period. Actually, the final a
 
 > What is validation, and what’s a classic mistake you can make if you do it wrong? How did you validate your analysis?  [relevant rubric items: “discuss validation”, “validation strategy”]
 
-In my opinion, validation is separating testing data and training data. Only use training data for model training, and use test data to estimate the model performance and to check whether overfitting exist in the model. To maximize the use of our data, we could do K-Fold cross validation and others. And in this case, `StratifiedShuffleSplit` were used. And I think using all features and labels to train the model would probably be a classic mistake, in this way, you would get a rather high score because your model had already seen the data.
+In my opinion, validation is separating testing data and training data. Only use training data for model training, and use test data to estimate the model performance and to check whether overfitting exist in the model. To maximize the use of our data, we could do K-Fold cross validation and other validation methods.
 
-During `GridSearchCV`, I used `StratifiedShuffleSplit` as the cross validation method. And the best estimator produced by `GridSearchCV` were estimated using `tester.py`.
+And I think using all features and labels to train the model would probably be a classic mistake, in this way, you would get a rather high score because your model had already seen the data.
+
+And in this case, `StratifiedShuffleSplit` were used as the cross validation method, during `GridSearchCV` to search for good parameters set and in `tester.py`to estimate performance. The reason why it was perferred was that since two classes were imbalanced(only 18 POIs), stratification would keep the balance between POIs ans non-POIs.
+
 
 > Give at least 2 evaluation metrics and your average performance for each of them.  Explain an interpretation of your metrics that says something human-understandable about your algorithm’s performance. [relevant rubric item: “usage of evaluation metrics”]
 
